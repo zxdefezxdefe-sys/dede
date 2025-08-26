@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Ama Prank</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    :root{
+      --bg:#000;
+      --fg:#c3ffb8;
+      --accent:#ff3b3b;
+      --dim:#888;
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;padding:0;background:var(--bg);color:var(--fg);font-family:monospace}
+    .wrap{max-width:900px;margin:0 auto;padding:18px}
+    .title{
+      display:flex;align-items:center;gap:10px;justify-content:center;margin:12px 0 8px
+    }
+    .dot{width:10px;height:10px;border-radius:50%;background:var(--accent);animation:pulse 1s infinite}
+    @keyframes pulse{0%{opacity:1;}50%{opacity:.3;}100%{opacity:1;}}
+    h1{font-size:20px;margin:0;color:var(--accent);text-align:center}
+    .panel{border:1px solid #222;border-radius:10px;overflow:hidden;box-shadow:0 0 30px rgba(255,0,0,.08) inset}
+    .panel-head{background:#0c0c0c;padding:10px 14px;color:#eee;display:flex;justify-content:space-between;align-items:center}
+    .badge{font-size:12px;color:#000;background:#ffb703;border-radius:6px;padding:3px 8px}
+    .panel-body{padding:14px}
+
+    .progress{width:100%;height:12px;background:#111;border:1px solid #222;border-radius:20px;overflow:hidden;margin:10px 0 16px}
+    .bar{height:100%;width:0%;}
+    .bar.red{background:#c1121f;animation:glow 1.2s infinite}
+    .bar.green{background:#00c853;animation:glow 1.2s infinite}
+    @keyframes glow{0%{filter:brightness(1);}50%{filter:brightness(1.8);}100%{filter:brightness(1);}}
+
+    .log{height:280px;overflow:auto;background:#050505;border:1px solid #111;border-radius:8px;padding:10px;line-height:1.35}
+    .muted{color:var(--dim)}
+    .warn{color:#ffa7a7}
+    .ok{color:#a7ff83}
+    .blink{animation:blink 1s step-end infinite}
+    @keyframes blink{50%{opacity:0;}}
+
+    .reveal{display:none;margin-top:16px;padding:12px;border:1px dashed #2e7d32;background:#071d07;color:#c8facc;border-radius:10px}
+    .btn{
+      display:inline-block;margin-top:14px;padding:10px 16px;border-radius:24px;border:1px solid #2b2b2b;background:#111;
+      color:#fff;text-decoration:none;cursor:pointer;transition:.2s
+    }
+    .btn:hover{transform:translateY(-1px)}
+    .btn-accept{background:#1b5e20;border-color:#2e7d32}
+    .footer{margin:20px 0;text-align:center;color:#9aa; font-size:12px}
+    .sig{opacity:.9}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="title">
+      <div class="dot"></div>
+      <h1>⚠️ DATA SEDANG DIEKSPOR…</h1>
+      <div class="dot"></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <div><b>Ama Prank – Data Bocor</b></div>
+        <div class="badge">SIMULASI • TIDAK NYENTUH DATA</div>
+      </div>
+      <div class="panel-body">
+        <div class="muted">Status proses</div>
+        <div class="progress"><div id="pbar" class="bar red"></div></div>
+        <div class="muted">Terminal</div>
+        <div id="log" class="log" aria-live="polite"></div>
+
+        <button id="btnReveal" class="btn btn-accept">Aku paham ini cuma prank</button>
+        <div id="reveal" class="reveal">
+          😅 Tenang! Ini **100% PRANK**. Tidak ada data yang diakses/diambil.
+          <br>— by <b>Dede</b> • App: <b>Ama Prank</b>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <span class="sig">© IFRC • by Dede • Partner: Kian Iyan • Owner: 6283869888323</span>
+    </div>
+  </div>
+
+  <!-- Suara sirine (akan auto-play via setting WebView di Java) -->
+  <audio id="siren" src="file:///android_asset/siren.mp3" loop></audio>
+
+  <script>
+    // Util kecil
+    const sleep = (ms)=>new Promise(r=>setTimeout(r,ms));
+    const logEl = document.getElementById('log');
+    function write(line, cls=""){
+      const p = document.createElement('div');
+      if (cls) p.className = cls;
+      p.textContent = line;
+      logEl.appendChild(p);
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    // Progress palsu
+    let progress = 0;
+    const pbar = document.getElementById('pbar');
+    async function fakeProgress(){
+      while(progress < 100){
+        await sleep(200 + Math.random()*350);
+        progress += Math.random()*8;
+        if(progress>100) progress = 100;
+        pbar.style.width = progress + "%";
+        if(progress > 66) pbar.className = "bar green";
+      }
+    }
+
+    // Ketikan log palsu
+    const lines = [
+      "[INIT] Menyiapkan modul ekspor...",
+      "[OK] Koneksi aman tersimulasi.",
+      "[SCAN] Memindai direktori media...",
+      "[INFO] 1.204 file ditemukan (simulasi).",
+      "[UPLOAD] Mengunggah batch 1/12…",
+      "[WARN] Kecepatan lambat, mencoba akselerasi...",
+      "[OK] Batch 1 selesai.",
+      "[UPLOAD] Mengunggah batch 2/12…",
+      "[OK] Batch 2 selesai.",
+      "[FINAL] Kompilasi metadata (palsu)...",
+      "[DONE] Ekspor selesai. Anda kena PRANK 🤣"
+    ];
+
+    async function streamLogs(){
+      for(const l of lines){
+        await sleep(500 + Math.random()*800);
+        const cls = l.startsWith("[OK]") ? "ok" : (l.startsWith("[WARN]") ? "warn" : "");
+        write(l, cls);
+        // getar dikit (kalau support)
+        if (navigator.vibrate) navigator.vibrate(20);
+      }
+      // munculin tombol reveal berdenyut
+      document.getElementById('btnReveal').style.boxShadow='0 0 12px rgba(0,255,0,.35)';
+    }
+
+    // kontrol audio (akan di-allow autoplay dari WebView)
+    const siren = document.getElementById('siren');
+    async function startSiren(){
+      try { await siren.play(); } catch(e){ /* kalau gagal, user bisa tap layar */ }
+    }
+
+    // tombol reveal
+    const btnReveal = document.getElementById('btnReveal');
+    const reveal = document.getElementById('reveal');
+    btnReveal.addEventListener('click', ()=>{
+      reveal.style.display='block';
+      write("[INFO] Mode prank diakhiri oleh pengguna.", "muted");
+      siren.pause();
+      siren.currentTime = 0;
+    });
+
+    // Mulai simulasi
+    (async ()=>{
+      startSiren();
+      write(">>> PRANK MODE AKTIF. Ini hanya simulasi. Tidak ada data sungguhan yang diakses.", "muted");
+      fakeProgress();
+      streamLogs();
+    })();
+  </script>
+</body>
+</html>
